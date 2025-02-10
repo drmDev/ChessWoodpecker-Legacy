@@ -1,0 +1,61 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+
+# User-specific files
+*.user
+*.suo
+*.tmp
+*.log
+
+# NuGet Packages
+*.nupkg
+project.lock.json
+*.nuget.props
+*.nuget.targets
+
+# DotNet specific
+*.vspscc
+*.vssscc
+*.lock.json
+*.ide.log
+*.ide.log.*
+
+# Test results
+*.testlog
+TestResults/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# JetBrains Rider
+.idea/
+
+# macOS Finder
+*.DS_Store
+
+# Logs and backups
+*.log
+*.bak
+*.swp
+*.tmp
+
+# Selenium-specific binaries
+chromedriver.exe
+selenium-server-standalone-*.jar
+
+# Coverage and code analysis
+coverage/
+*.coverage
+*.coveragexml
+
+_site
+.sass-cache
+.jekyll-cache
+.jekyll-metadata
+vendor
+.env
