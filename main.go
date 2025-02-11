@@ -8,15 +8,17 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
 
-// Puzzle struct matching your database schema
+
 type Puzzle struct {
-	ID       int    `json:"puzzle_id"`
-	Category string `json:"category"`
-	URL      string `json:"url"`
+    ID         int    `json:"puzzle_id"`
+    Category   string `json:"category"`
+    URL        string `json:"url"`
+    LichessID  string `json:"lichess_id"`
 }
 
 // Global variable to store puzzles loaded from the database
@@ -53,32 +55,42 @@ func getDBConnection() (*pgx.Conn, error) {
 
 // Query all puzzles from the database
 func loadPuzzlesFromDB() {
-	conn, err := getDBConnection()
-	if err != nil {
-		log.Fatal("Database connection error:", err)
-	}
-	defer conn.Close(context.Background())
+    conn, err := getDBConnection()
+    if err != nil {
+        log.Fatal("Database connection error:", err)
+    }
+    defer conn.Close(context.Background())
 
-	query := `SELECT puzzle_id, category, url FROM puzzles;`
-	rows, err := conn.Query(context.Background(), query)
-	if err != nil {
-		log.Fatal("Failed to query puzzles:", err)
-	}
-	defer rows.Close()
+    query := `SELECT puzzle_id, category, url FROM puzzles;`
+    rows, err := conn.Query(context.Background(), query)
+    if err != nil {
+        log.Fatal("Failed to query puzzles:", err)
+    }
+    defer rows.Close()
 
-	var puzzleList []Puzzle
-	for rows.Next() {
-		var p Puzzle
-		if err := rows.Scan(&p.ID, &p.Category, &p.URL); err != nil {
-			log.Println("Error scanning row:", err)
-			continue
-		}
-		puzzleList = append(puzzleList, p)
-	}
+    var puzzleList []Puzzle
+    for rows.Next() {
+        var p Puzzle
+        if err := rows.Scan(&p.ID, &p.Category, &p.URL); err != nil {
+            log.Println("Error scanning row:", err)
+            continue
+        }
+        
+        // Extract Lichess ID from URL
+        parts := strings.Split(p.URL, "/")
+        if len(parts) > 0 {
+            p.LichessID = parts[len(parts)-1]
+        } else {
+            log.Printf("Invalid URL format for puzzle ID %d: %s", p.ID, p.URL)
+            continue
+        }
+        
+        puzzleList = append(puzzleList, p)
+    }
 
-	// Store the puzzles in the global variable without shuffling
-	puzzles = puzzleList
-	log.Println("Loaded", len(puzzles), "puzzles from database")
+    // Store the puzzles in the global variable without shuffling
+    puzzles = puzzleList
+    log.Println("Loaded", len(puzzles), "puzzles from database")
 }
 
 // API handler to return randomized puzzles
