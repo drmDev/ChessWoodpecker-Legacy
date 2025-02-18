@@ -1,8 +1,6 @@
-CREATE TABLE IF NOT EXISTS puzzles (
-    puzzle_id SERIAL PRIMARY KEY,
-    category TEXT NOT NULL,
-    url TEXT UNIQUE NOT NULL
-);
+DROP TABLE IF EXISTS user_progress;
+DROP TABLE IF EXISTS user_sessions;
+DROP TABLE IF EXISTS users;
 
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,

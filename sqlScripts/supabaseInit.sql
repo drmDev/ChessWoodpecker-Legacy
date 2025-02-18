@@ -1,3 +1,44 @@
+DROP TABLE IF EXISTS puzzle_progress;
+DROP TABLE IF EXISTS puzzles;
+
+CREATE TABLE puzzles (
+    puzzle_id SERIAL PRIMARY KEY,
+    category VARCHAR(255),
+    url TEXT
+);
+
+ALTER TABLE puzzles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Puzzles are viewable by all authenticated users"
+ON puzzles FOR SELECT
+TO authenticated
+USING (true);
+
+CREATE TABLE puzzle_progress (
+    id SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id),
+    puzzle_id INTEGER REFERENCES puzzles(puzzle_id),
+    status VARCHAR(10) CHECK (status IN ('success', 'failed')),
+    attempted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, puzzle_id)
+);
+
+-- RLS Policies
+ALTER TABLE puzzle_progress ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own progress"
+ON puzzle_progress FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own progress"
+ON puzzle_progress FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own progress"
+ON puzzle_progress FOR UPDATE
+USING (auth.uid() = user_id);
+
+-- All the 100 puzzles
 INSERT INTO Puzzles (category, url) VALUES 
 ('Discovered Attacks', 'https://lichess.org/training/wVnOg'),
 ('Discovered Attacks', 'https://lichess.org/training/8P7Sd'),
@@ -92,7 +133,7 @@ INSERT INTO Puzzles (category, url) VALUES
 ('Rook and Pawn Endgame', 'https://lichess.org/training/4LDPr'),
 ('Rook and Pawn Endgame', 'https://lichess.org/training/hu6Kn'),
 ('Rook and Pawn Endgame', 'https://lichess.org/training/uOJGD'),
-('Rook and Pawn Endgame', 'https://lichess.org/training/XyPu9'),
+('Rook and Pawn Endgame', 'https://lichess.org/training/XyPu9');
 ('Rook and Pawn Endgame', 'https://lichess.org/training/C24wf'),
 ('Rook and Pawn Endgame', 'https://lichess.org/training/mSqKY'),
 ('Rook and Pawn Endgame', 'https://lichess.org/training/vgZ0H'),
