@@ -4,20 +4,19 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branches: [ main ]
 
 jobs:
-  test:
-    name: Build and Test
+  test-and-build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Check out code
+      uses: actions/checkout@v3
 
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.23'  # Adjust this to match your Go version
+        go-version: '1.23'
         cache: true
 
     - name: Build
@@ -28,14 +27,13 @@ jobs:
         go test -v ./...
         go test -coverprofile=coverage.out ./...
 
-  docker:
-    name: Build and Push Docker Image
-    needs: test  # Only runs if tests pass
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # Only run on main branch
-
-    steps:
-    - uses: actions/checkout@v3
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.out
+        retention-days: 90
+        if-no-files-found: error
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
@@ -43,11 +41,7 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: |
-          ${{ secrets.DOCKER_USERNAME }}/chesswoodpecker:latest
-          ${{ secrets.DOCKER_USERNAME }}/chesswoodpecker:${{ github.sha }}
+    - name: Build Docker Image
+      run: |
+        docker build -t drmdev/chesswoodpecker:latest .
+        docker push drmdev/chesswoodpecker:latest
