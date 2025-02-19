@@ -59,3 +59,9 @@ _site
 .jekyll-metadata
 vendor
 .env
+
+# Test binary, built with `go test -c`
+*.test
+
+# Test coverage output
+coverage.out

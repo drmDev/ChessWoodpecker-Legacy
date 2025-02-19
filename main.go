@@ -19,10 +19,8 @@ type Puzzle struct {
 	LichessID string `json:"lichess_id"`
 }
 
-// Global variable to store puzzles loaded from the database
 var puzzles []Puzzle
 
-// CORS middleware
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -36,7 +34,6 @@ func withCORS(next http.Handler) http.Handler {
 	})
 }
 
-// Get a database connection
 func getDBConnection() (*pgx.Conn, error) {
 	dbURL := os.Getenv("DATABASE_PUBLIC_URL")
 	if dbURL == "" {
@@ -51,7 +48,6 @@ func getDBConnection() (*pgx.Conn, error) {
 	return conn, nil
 }
 
-// Query all puzzles from the database on initial startup
 func loadPuzzlesFromDB() {
 	conn, err := getDBConnection()
 	if err != nil {
@@ -68,10 +64,6 @@ func loadPuzzlesFromDB() {
 
 	var puzzleList []Puzzle
 
-	// ADDED: Track unique IDs during initial load
-	idMap := make(map[string]bool)
-	duplicates := make([]string, 0)
-
 	for rows.Next() {
 		var p Puzzle
 		if err := rows.Scan(&p.ID, &p.Category, &p.URL); err != nil {
@@ -83,11 +75,6 @@ func loadPuzzlesFromDB() {
 		parts := strings.Split(p.URL, "/")
 		if len(parts) > 0 {
 			p.LichessID = parts[len(parts)-1]
-			// ADDED: Check for duplicates during load
-			if idMap[p.LichessID] {
-				duplicates = append(duplicates, p.LichessID)
-			}
-			idMap[p.LichessID] = true
 		} else {
 			log.Printf("Invalid URL format for puzzle ID %d: %s", p.ID, p.URL)
 			continue
@@ -96,34 +83,11 @@ func loadPuzzlesFromDB() {
 		puzzleList = append(puzzleList, p)
 	}
 
-	// ADDED: Detailed logging of puzzle load results
-	log.Printf("Database load summary:")
-	log.Printf("- Total puzzles loaded: %d", len(puzzleList))
-	log.Printf("- Unique Lichess IDs: %d", len(idMap))
-	if len(duplicates) > 0 {
-		log.Printf("WARNING: Found %d duplicate lichess_ids in database: %v", len(duplicates), duplicates)
-	}
-
-	// Log category distribution
-	categoryCount := make(map[string]int)
-	for _, p := range puzzleList {
-		categoryCount[p.Category]++
-	}
-	log.Println("Category distribution:")
-	for category, count := range categoryCount {
-		log.Printf("- %s: %d puzzles", category, count)
-	}
-
-	// Store the puzzles in the global variable without shuffling
 	puzzles = puzzleList
 }
 
-// the API endpoint to retrieve and shuffle the 100 puzzles
 func getPuzzles(w http.ResponseWriter, r *http.Request) {
-	requestID := rand.Int()
-	log.Printf("[Request %d] Generating puzzle set", requestID)
-
-	// Create a copy of indices and shuffle them
+	// Create and shuffle indices
 	indices := make([]int, len(puzzles))
 	for i := range indices {
 		indices[i] = i
@@ -137,31 +101,6 @@ func getPuzzles(w http.ResponseWriter, r *http.Request) {
 	result := make([]Puzzle, min(100, len(puzzles)))
 	for i := range result {
 		result[i] = puzzles[indices[i]]
-	}
-
-	// Validate response set
-	idMap := make(map[string]bool)
-	duplicates := make([]string, 0)
-	categoryCount := make(map[string]int)
-
-	for _, p := range result {
-		if idMap[p.LichessID] {
-			duplicates = append(duplicates, p.LichessID)
-		}
-		idMap[p.LichessID] = true
-		categoryCount[p.Category]++
-	}
-
-	// ADDED: Detailed response logging
-	log.Printf("[Request %d] Response summary:", requestID)
-	log.Printf("- Puzzles in response: %d", len(result))
-	log.Printf("- Unique puzzles: %d", len(idMap))
-	if len(duplicates) > 0 {
-		log.Printf("- WARNING: Found duplicates: %v", duplicates)
-	}
-	log.Println("- Category distribution in response:")
-	for category, count := range categoryCount {
-		log.Printf("  %s: %d puzzles", category, count)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
