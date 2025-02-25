@@ -63,6 +63,8 @@ func loadPuzzlesFromDB() {
 	defer rows.Close()
 
 	var puzzleList []Puzzle
+	seenIDs := make(map[string]bool)
+	duplicates := make([]string, 0)
 
 	for rows.Next() {
 		var p Puzzle
@@ -75,12 +77,29 @@ func loadPuzzlesFromDB() {
 		parts := strings.Split(p.URL, "/")
 		if len(parts) > 0 {
 			p.LichessID = parts[len(parts)-1]
+			// Check for duplicates
+			if seenIDs[p.LichessID] {
+				duplicates = append(duplicates, p.LichessID)
+			}
+			seenIDs[p.LichessID] = true
 		} else {
 			log.Printf("Invalid URL format for puzzle ID %d: %s", p.ID, p.URL)
 			continue
 		}
 
 		puzzleList = append(puzzleList, p)
+	}
+
+	// Validate puzzle count
+	if len(puzzleList) < 200 {
+		log.Printf("⚠️ Warning: Expected 200 puzzles but only loaded %d", len(puzzleList))
+	} else {
+		log.Printf("✅ Successfully loaded %d puzzles", len(puzzleList))
+	}
+
+	// Report any duplicates
+	if len(duplicates) > 0 {
+		log.Printf("⚠️ Warning: Found duplicate Lichess IDs: %v", duplicates)
 	}
 
 	puzzles = puzzleList
@@ -97,8 +116,7 @@ func getPuzzles(w http.ResponseWriter, r *http.Request) {
 		indices[i], indices[j] = indices[j], indices[i]
 	}
 
-	// Take the first 100 (or less if fewer puzzles exist)
-	result := make([]Puzzle, min(100, len(puzzles)))
+	result := make([]Puzzle, len(puzzles))
 	for i := range result {
 		result[i] = puzzles[indices[i]]
 	}
@@ -114,6 +132,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/puzzles", getPuzzles)
 
+	log.Printf("✅ Server initialized with %d puzzles", len(puzzles))
 	log.Println("Puzzles API Server is running on port 8081...")
 	http.ListenAndServe(":8081", withCORS(mux))
 }

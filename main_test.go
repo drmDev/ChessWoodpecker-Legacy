@@ -9,17 +9,20 @@ import (
 )
 
 // Test setup helper
-func setupTestPuzzles() {
-	// Initialize test puzzle data
-	puzzles = []Puzzle{
-		{ID: 1, Category: "Pins", URL: "https://lichess.org/training/abc123", LichessID: "abc123"},
-		{ID: 2, Category: "Forks", URL: "https://lichess.org/training/def456", LichessID: "def456"},
-		{ID: 3, Category: "Skewers", URL: "https://lichess.org/training/ghi789", LichessID: "ghi789"},
+func setupTestPuzzles(size int) {
+	puzzles = make([]Puzzle, size)
+	for i := 0; i < size; i++ {
+		puzzles[i] = Puzzle{
+			ID:        i + 1,
+			Category:  "Test Category",
+			URL:       "https://lichess.org/training/abc" + string(rune(i)),
+			LichessID: "abc" + string(rune(i)),
+		}
 	}
 }
 
 func TestGetPuzzles(t *testing.T) {
-	setupTestPuzzles()
+	setupTestPuzzles(3)
 
 	// Create a request to pass to our handler
 	req, err := http.NewRequest("GET", "/api/puzzles", nil)
@@ -53,11 +56,10 @@ func TestGetPuzzles(t *testing.T) {
 		t.Errorf("Failed to decode response body: %v", err)
 	}
 
-	// Verify response length
-	expectedLength := min(100, len(puzzles))
-	if len(response) != expectedLength {
+	// Verify all puzzles are returned (no 100 limit)
+	if len(response) != 3 {
 		t.Errorf("handler returned wrong number of puzzles: got %v want %v",
-			len(response), expectedLength)
+			len(response), 3)
 	}
 
 	// Verify that all returned puzzles are valid
@@ -69,7 +71,7 @@ func TestGetPuzzles(t *testing.T) {
 }
 
 func TestWithCORS(t *testing.T) {
-	setupTestPuzzles()
+	setupTestPuzzles(3)
 
 	// Create a test server with CORS middleware
 	handler := withCORS(http.HandlerFunc(getPuzzles))
