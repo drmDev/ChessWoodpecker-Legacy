@@ -1,5 +1,7 @@
 # Chess Woodpecker App
 
+## NOTE: This version is deprecated. It is fully functional in its current state. A new version is being worked on in a separate repository.
+
 ## Description
 This app helps chess players improve their pattern recognition skills by solving puzzles repeatedly over a spaced repetition period, utilizing the Woodpecker Method. The app automatically tracks users' progress, eliminating the need for manual tracking and recording of puzzle-solving metrics. It integrates seamlessly with Lichess.com's public API to retrieve puzzles and solutions.
 
